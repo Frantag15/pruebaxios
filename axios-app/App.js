@@ -1,26 +1,33 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, Image, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TextInput, Button, ActivityIndicator, Image, ScrollView, StyleSheet } from 'react-native';
 import axios from 'axios';
 
 export default function App() {
-  const [id, setId] = useState('');
-  const [movie, setMovie] = useState(null);
+  const [movieId, setMovieId] = useState('');
+  const [movieData, setMovieData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchMovie = async () => {
     setLoading(true);
-    setMovie(null);
+    setMovieData(null);
+    setError(null);
 
     try {
-      const response = await axios.get(`http://www.omdbapi.com/?i=${id}&apikey=7b62fa5d`);
+      const response = await axios.get(`https://www.omdbapi.com/?i=${movieId}&apikey=tt0317219`);
       
-      // Simular retardo de 3 segundos
+      // Simula espera de 3 segundos
       setTimeout(() => {
-        setMovie(response.data);
+        if (response.data.Response === 'True') {
+          setMovieData(response.data);
+        } else {
+          setError('Película no encontrada.');
+        }
         setLoading(false);
       }, 3000);
-    } catch (error) {
-      console.error(error);
+
+    } catch (err) {
+      setError('Error al buscar la película.');
       setLoading(false);
     }
   };
@@ -31,26 +38,31 @@ export default function App() {
       <TextInput
         style={styles.input}
         placeholder="Ej: tt0317219"
-        value={id}
-        onChangeText={setId}
+        value={movieId}
+        onChangeText={setMovieId}
       />
       <Button title="Buscar" onPress={fetchMovie} />
+      {loading && <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />}
+      {error && <Text style={styles.error}>{error}</Text>}
+      {movieData && (
+        <View style={styles.result}>
+          <Text style={styles.movieTitle}>{movieData.Title}</Text>
+          <Image source={{ uri: movieData.Poster }} style={styles.poster} />
 
-      {loading && <ActivityIndicator size="large" color="#0000ff" style={{ marginTop: 20 }} />}
+          <Text style={styles.label}>Actors:</Text>
+          <Text style={styles.info}>{movieData.Actors}</Text>
 
-      {movie && movie.Response === 'True' && (
-        <View style={styles.movieContainer}>
-          <Text style={styles.movieTitle}>{movie.Title}</Text>
-          {movie.Poster && (
-            <Image source={{ uri: movie.Poster }} style={styles.poster} />
-          )}
-          <Text style={styles.label}>Actores: <Text style={styles.info}>{movie.Actors}</Text></Text>
-          <Text style={styles.label}>Director: <Text style={styles.info}>{movie.Director}</Text></Text>
-          <Text style={styles.label}>Género: <Text style={styles.info}>{movie.Genre}</Text></Text>
+          <Text style={styles.label}>Director:</Text>
+          <Text style={styles.info}>{movieData.Director}</Text>
+
+          <Text style={styles.label}>Genre:</Text>
+          <Text style={styles.info}>{movieData.Genre}</Text>
 
           <Text style={styles.label}>Ratings:</Text>
-          {movie.Ratings && movie.Ratings.map((rating, index) => (
-            <Text key={index} style={styles.info}>• {rating.Source}: {rating.Value}</Text>
+          {movieData.Ratings.map((rating, index) => (
+            <Text key={index} style={styles.rating}>
+              {rating.Source}: {rating.Value}
+            </Text>
           ))}
         </View>
       )}
@@ -61,44 +73,53 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-    paddingBottom: 40,
-    alignItems: 'center',
+    paddingBottom: 60,
+    backgroundColor: '#fff',
+    flexGrow: 1,
   },
   title: {
-    fontSize: 20,
-    marginVertical: 20,
+    fontSize: 22,
+    marginBottom: 20,
     fontWeight: 'bold',
+    textAlign: 'center'
   },
   input: {
-    borderColor: '#ccc',
     borderWidth: 1,
-    width: '100%',
+    borderColor: '#ccc',
     padding: 10,
-    borderRadius: 5,
     marginBottom: 10,
+    borderRadius: 6,
   },
-  movieContainer: {
+  loader: {
+    marginVertical: 20,
+  },
+  error: {
+    color: 'red',
+    marginTop: 10,
+    fontWeight: 'bold'
+  },
+  result: {
     marginTop: 20,
-    alignItems: 'center',
   },
   movieTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
   },
   poster: {
-    width: 300,
+    width: '100%',
     height: 450,
     resizeMode: 'contain',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   label: {
     fontWeight: 'bold',
     marginTop: 10,
-    fontSize: 16,
   },
   info: {
-    fontWeight: 'normal',
-    fontSize: 15,
+    marginBottom: 5,
+  },
+  rating: {
+    fontStyle: 'italic',
   }
 });
